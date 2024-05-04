@@ -8,7 +8,7 @@ function App() {
   const [projectState, setProjectState] = useState({
     selectedProjectId: undefined,
     projects: [],
-    tasks: [],
+    projectTasks: {}, // Object to store tasks for each project
   });
 
   const startAddProjectHandler = () => {
@@ -24,22 +24,36 @@ function App() {
     setProjectState((prevState) => {
       const newTask = {
         text,
-        projectId: prevState.selectedProjectId,
         id: Math.random(),
+      };
+
+      const updatedTasks = {
+        ...prevState.projectTasks,
+        [prevState.selectedProjectId]: [
+          ...(prevState.projectTasks[prevState.selectedProjectId] || []),
+          newTask,
+        ],
       };
 
       return {
         ...prevState,
-        tasks: [newTask, ...prevState.tasks],
+        projectTasks: updatedTasks,
       };
     });
   };
 
   const deleteTaskHandler = (id) => {
     setProjectState((prevState) => {
+      const updatedTasks = {
+        ...prevState.projectTasks,
+        [prevState.selectedProjectId]: prevState.projectTasks[prevState.selectedProjectId].filter(
+          (task) => task.id !== id
+        ),
+      };
+
       return {
         ...prevState,
-        tasks: prevState.tasks.filter((task) => task.id !== id),
+        projectTasks: updatedTasks,
       };
     });
   };
@@ -55,12 +69,19 @@ function App() {
 
   const onDeleteSelectedProject = () => {
     setProjectState((prevState) => {
+      // Remove project from projects array
+      const updatedProjects = prevState.projects.filter(
+        (project) => project.id !== prevState.selectedProjectId
+      );
+
+      // Remove tasks associated with the deleted project
+      const { [prevState.selectedProjectId]: deletedProjectTasks, ...updatedTasks } = prevState.projectTasks;
+
       return {
         ...prevState,
         selectedProjectId: undefined,
-        projects: prevState.projects.filter(
-          (project) => project.id !== prevState.selectedProjectId
-        ),
+        projects: updatedProjects,
+        projectTasks: updatedTasks,
       };
     });
   };
@@ -89,6 +110,10 @@ function App() {
         ...prevState,
         selectedProjectId: undefined,
         projects: [...prevState.projects, newProject],
+        projectTasks: {
+          ...prevState.projectTasks,
+          [newProject.id]: [], // Initialize tasks array for the new project
+        },
       };
     });
   };
@@ -99,7 +124,7 @@ function App() {
       onDeleteTask={deleteTaskHandler}
       project={selectedProject}
       onDelete={onDeleteSelectedProject}
-      tasks={projectState.tasks}
+      tasks={projectState.projectTasks[selectedProject?.id] || []}
     />
   );
 
